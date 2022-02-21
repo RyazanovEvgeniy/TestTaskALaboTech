@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using TestTaskALaboTech.InputFile;
+using System.Linq;
+using TestTaskALaboTech.StringExtensions;
 
 namespace TestTaskALaboTech
 {
@@ -23,16 +24,39 @@ namespace TestTaskALaboTech
             while (true)
             {
                 Console.WriteLine("Input:");
+
+                // Читаем вводимую строку
                 string inputString = Console.ReadLine();
 
+                // Пытаем преобразовать ее в массив интов - кол-во мест с их количеством фишек на этих местах
                 if (inputString.TryParse(out List<int> chips))
                 {
-                    foreach (var item in chips)
-                        Console.WriteLine(item);
-                    Console.WriteLine("Output:");
+                    // Проверяем что равновесие возможно в принципе
+                    if (chips.Sum() % chips.Count == 0)
+                    {
+                        // Заводим счетчик
+                        int counter = 0;
+
+                        // Пока минимум и максимум в массиве не сравняются уравниваем
+                        while (chips.Min() != chips.Max())
+                        {
+                            // Вычисляем индексы минимума и максимума
+                            int indexOfMin = chips.IndexOf(chips.Min());
+                            int indexOfMax = chips.IndexOf(chips.Max());
+                            // Передаем одну фишку от минимума к максимуму
+                            chips[indexOfMax]--;
+                            chips[indexOfMin]++;
+                            // Наращиваем счетчик
+                            counter++;
+                        }
+
+                        // Выводим количество проведенных итераций
+                        Console.WriteLine("Output:");
+                        Console.WriteLine(counter);
+                    }
+                    else
+                        Console.WriteLine("Balance impossible with this numbers. Enter another.");
                 }
-
-
             }
         }
 
