@@ -6,9 +6,9 @@ namespace TestTaskALaboTech.StringExtensions
     public static class StringExtensions
     {
         // Метод расширения пытающийся разобрать верно ли введена строка
-        public static bool TryParse(this string inputString, out List<int> chips)
+        public static bool TryParse(this string inputString, out List<int> table)
         {
-            chips = new List<int>();
+            table = new List<int>();
 
             // Проверяем начало и конец строки
             if (inputString.StartsWith("chips: [") && inputString.EndsWith(']'))
@@ -24,7 +24,7 @@ namespace TestTaskALaboTech.StringExtensions
                 foreach (var item in inputValues)
                 {
                     if (int.TryParse(item, out int value))
-                        chips.Add(value);
+                        table.Add(value);
                     else
                     {
                         Console.WriteLine("Incorrect massive of numbers");

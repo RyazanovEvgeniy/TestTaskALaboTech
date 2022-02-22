@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using TestTaskALaboTech.StringExtensions;
+using TestTaskALaboTech.TransportTask;
 
 namespace TestTaskALaboTech
 {
@@ -29,30 +30,14 @@ namespace TestTaskALaboTech
                 string inputString = Console.ReadLine();
 
                 // Пытаем преобразовать ее в массив интов - кол-во мест с их количеством фишек на этих местах
-                if (inputString.TryParse(out List<int> chips))
+                if (inputString.TryParse(out List<int> table))
                 {
                     // Проверяем что равновесие возможно в принципе
-                    if (chips.Sum() % chips.Count == 0)
+                    if (table.Sum() % table.Count == 0)
                     {
-                        // Заводим счетчик
-                        int counter = 0;
-
-                        // Пока минимум и максимум в массиве не сравняются уравниваем
-                        while (chips.Min() != chips.Max())
-                        {
-                            // Вычисляем индексы минимума и максимума
-                            int indexOfMin = chips.IndexOf(chips.Min());
-                            int indexOfMax = chips.IndexOf(chips.Max());
-                            // Передаем одну фишку от минимума к максимуму
-                            chips[indexOfMax]--;
-                            chips[indexOfMin]++;
-                            // Наращиваем счетчик
-                            counter++;
-                        }
-
-                        // Выводим количество проведенных итераций
+                        // Считаем количество необходимых перемещений
                         Console.WriteLine("Output:");
-                        Console.WriteLine(counter);
+                        Console.WriteLine(TransportChips.GetPriceAndTransportChips(table));
                     }
                     else
                         Console.WriteLine("Balance impossible with this numbers. Enter another.");
