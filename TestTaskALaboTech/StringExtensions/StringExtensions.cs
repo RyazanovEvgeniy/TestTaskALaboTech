@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TestTaskALaboTech.StringExtensions
+namespace TestTaskALaboTech
 {
     public static class StringExtensions
     {

@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using TestTaskALaboTech.StringExtensions;
-using TestTaskALaboTech.TransportTask;
+using System.Text;
 
 namespace TestTaskALaboTech
 {
@@ -37,7 +36,7 @@ namespace TestTaskALaboTech
                     {
                         // Считаем количество необходимых перемещений
                         Console.WriteLine("Output:");
-                        Console.WriteLine(TransportChips.GetPriceAndTransportChips(table));
+                        Console.WriteLine(Transport.GetPriceOfTransport(table));
                     }
                     else
                         Console.WriteLine("Balance impossible with this numbers. Enter another.");
