@@ -40,26 +40,8 @@ namespace TestTaskALaboTech
             // Расчитываем первоначальный опорный план
             double[,] quantityOfTransport = CalculateBasePlan(pricesOfTransport, suppliers, consumers);
 
-            /*for (int i = 0; i < suppliers.Count; i++)
-            {
-                for (int j = 0; j < consumers.Count; j++)
-                {
-                    Console.Write(quantityOfTransport[i, j] + " ");
-                }
-                Console.WriteLine();
-            }*/
-
             // Проверяем оптимален ли план и если нужно оптимизируем
             OptimizePlan(pricesOfTransport, quantityOfTransport, suppliers.Count, consumers.Count);
-
-            /*for (int i = 0; i < suppliers.Count; i++)
-            {
-                for (int j = 0; j < consumers.Count; j++)
-                {
-                    Console.Write(quantityOfTransport[i, j] + " ");
-                }
-                Console.WriteLine();
-            }*/
 
             // Возвращаем цену транспортировки после оптимизиации
             return CalculatePriceOfTransportation(pricesOfTransport, quantityOfTransport, suppliers.Count, consumers.Count);
@@ -77,7 +59,7 @@ namespace TestTaskALaboTech
             // Работаем пока не сформируем опорный план
             while (true)
             {
-                // Ищем перевозку по минимальной стоимости
+                // Ищем перевозку по минимальной стоимости c максимальной нагрузкой
                 // с незаблокированными осями
                 int min = int.MaxValue;
                 int indexOfSupplier = 0, indexOfConsumer = 0;
@@ -86,14 +68,26 @@ namespace TestTaskALaboTech
                 {
                     for (int j = 0; j < consumers.Count; j++)
                     {
-                        if (min > pricesOfTransport[i, j]
-                            && !double.IsNaN(suppliers[i].Item2)
+                        if (!double.IsNaN(suppliers[i].Item2)
                             && !double.IsNaN(consumers[j].Item2))
                         {
-                            min = pricesOfTransport[i, j];
-                            indexOfSupplier = i;
-                            indexOfConsumer = j;
+                            if (min > pricesOfTransport[i, j])
+                            {
+                                min = pricesOfTransport[i, j];
+                                indexOfSupplier = i;
+                                indexOfConsumer = j;
+                            }
+
+                            // Если минимум уже есть, но есть перевозка по той же цене, но в большем количестве
+                            if (min == pricesOfTransport[i, j]
+                                && suppliers[indexOfSupplier].Item2 - consumers[indexOfConsumer].Item2 > suppliers[i].Item2 - consumers[j].Item2)
+                            {
+                                min = pricesOfTransport[i, j];
+                                indexOfSupplier = i;
+                                indexOfConsumer = j;
+                            }
                         }
+
                     }
                 }
 
@@ -161,15 +155,16 @@ namespace TestTaskALaboTech
                 suppliersPotenial[0] = 0;
 
                 // Вычисляем потенциалы
-                for (int i = 0; i < suppliersCount; i++)
-                    for (int j = 0; j < consumersCount; j++)
-                        if (!double.IsNaN(quantityOfTransport[i, j]))
-                        {
-                            if (double.IsNaN(consumerPotenial[j]))
-                                consumerPotenial[j] = pricesOfTransport[i, j] - suppliersPotenial[i];
-                            if (double.IsNaN(suppliersPotenial[i]))
-                                suppliersPotenial[i] = pricesOfTransport[i, j] - consumerPotenial[j];
-                        }
+                while (suppliersPotenial.Contains(double.NaN) || consumerPotenial.Contains(double.NaN))
+                    for (int i = 0; i < suppliersCount; i++)
+                        for (int j = 0; j < consumersCount; j++)
+                            if (!double.IsNaN(quantityOfTransport[i, j]))
+                            {
+                                if (double.IsNaN(consumerPotenial[j]))
+                                    consumerPotenial[j] = pricesOfTransport[i, j] - suppliersPotenial[i];
+                                if (double.IsNaN(suppliersPotenial[i]))
+                                    suppliersPotenial[i] = pricesOfTransport[i, j] - consumerPotenial[j];
+                            }
 
                 // Оценка не задействованных маршрутов
                 // Цена доставки минус сумма потенциалов незадействованного маршрута
@@ -210,6 +205,7 @@ namespace TestTaskALaboTech
                             break;
                         }
                     }
+
                     // Ищем вершину по вертикали от незадействованного маршрута с низкой оценкой
                     int indexOfVerticalJ = 0;
                     for (int j = 0; j < consumersCount; j++)
@@ -233,14 +229,20 @@ namespace TestTaskALaboTech
                     else
                         quantityOfTransport[indexOfHorizontalI, indexOfVerticalJ] += quantityProduct;
                     // Первая отрицательная вершина
-                    quantityOfTransport[indexOfHorizontalI, indexOfMinJ] -= quantityProduct;
+                    if (quantityOfTransport[indexOfHorizontalI, indexOfMinJ] == quantityProduct)
+                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ] = double.NaN;
+                    else
+                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ] -= quantityProduct;
                     // Вторая положительная вершина
                     if (double.IsNaN(quantityOfTransport[indexOfMinI, indexOfMinJ]))
                         quantityOfTransport[indexOfMinI, indexOfMinJ] = quantityProduct;
                     else
                         quantityOfTransport[indexOfMinI, indexOfMinJ] += quantityProduct;
                     // Вторая отрицательная вершина
-                    quantityOfTransport[indexOfMinI, indexOfVerticalJ] -= quantityProduct;
+                    if (quantityOfTransport[indexOfMinI, indexOfVerticalJ] == quantityProduct)
+                        quantityOfTransport[indexOfMinI, indexOfVerticalJ] = double.NaN;
+                    else
+                        quantityOfTransport[indexOfMinI, indexOfVerticalJ] -= quantityProduct;
                 }
                 else
                     return;
