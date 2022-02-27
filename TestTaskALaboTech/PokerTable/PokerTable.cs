@@ -48,11 +48,11 @@ namespace TestTaskALaboTech
             }
 
             // Строим матрицу цен транспортировки для транспортной задачи
-            int[,] pricesOfTransport = new int[suppliers.Count, consumers.Count];
+            int[,] deliveryPrices = new int[suppliers.Count, consumers.Count];
 
             for (int i = 0; i < suppliers.Count; i++)
                 for (int j = 0; j < consumers.Count; j++)
-                    pricesOfTransport[i, j] = Math.Min(
+                    deliveryPrices[i, j] = Math.Min(
                         Math.Abs(suppliers[i].Item1 - consumers[j].Item1),
                         quantityPlaces - Math.Abs(suppliers[i].Item1 - consumers[j].Item1));
 
@@ -64,19 +64,20 @@ namespace TestTaskALaboTech
             foreach (var consumer in consumers)
                 needs.Add(consumer.Item2);
 
-            // Расчитываем опорный план
-            double[,] quantityOfTransport = TransportTask.CalculateBasePlan(pricesOfTransport, reserves, needs);
+            // Расcчитываем опорный план
+            double[,] deliveryPlan = TransportTask.CalculateBasePlan(deliveryPrices, reserves, needs);
 
             Console.WriteLine("quantityOfTransport");
-            for (int i = 0; i < quantityOfTransport.GetLength(0); i++)
+            for (int i = 0; i < deliveryPlan.GetLength(0); i++)
             {
-                for (int j = 0; j < quantityOfTransport.GetLength(1); j++)
-                    Console.Write(quantityOfTransport[i, j] + " ");
+                for (int j = 0; j < deliveryPlan.GetLength(1); j++)
+                    Console.Write(deliveryPlan[i, j] + " ");
                 Console.WriteLine();
             }
             Console.WriteLine();
 
-            return 0;
+            // Смотрим стоимость доставки по опорному плану
+            return TransportTask.CalculatePriceOfTransportation(deliveryPrices, deliveryPlan);
         }
     }
 }

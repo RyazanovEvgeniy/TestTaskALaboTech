@@ -7,13 +7,13 @@ namespace TransportTaskLibrary
     public static class TransportTask
     {
         // Метод расчета опорного плана
-        public static double[,] CalculateBasePlan(int[,] pricesOfTransport, List<double> reserves, List<double> needs)
+        public static double[,] CalculateBasePlan(int[,] deliveryPrices, List<double> reserves, List<double> needs)
         {
             // Подготавливаем матрицу доставки
-            double[,] quantityOfTransport = new double[reserves.Count, needs.Count];
+            double[,] deliveryPlan = new double[reserves.Count, needs.Count];
             for (int i = 0; i < reserves.Count; i++)
                 for (int j = 0; j < needs.Count; j++)
-                    quantityOfTransport[i, j] = double.NaN;
+                    deliveryPlan[i, j] = double.NaN;
 
             // Работаем пока не сформируем опорный план
             while (true)
@@ -30,18 +30,18 @@ namespace TransportTaskLibrary
                         if (!double.IsNaN(reserves[i])
                             && !double.IsNaN(needs[j]))
                         {
-                            if (min > pricesOfTransport[i, j])
+                            if (min > deliveryPrices[i, j])
                             {
-                                min = pricesOfTransport[i, j];
+                                min = deliveryPrices[i, j];
                                 indexOfSupplier = i;
                                 indexOfConsumer = j;
                             }
 
                             // Если минимум уже есть, но есть перевозка по той же цене, но в большем количестве
-                            if (min == pricesOfTransport[i, j]
+                            if (min == deliveryPrices[i, j]
                                 && reserves[indexOfSupplier] - needs[indexOfConsumer] > reserves[i] - needs[j])
                             {
-                                min = pricesOfTransport[i, j];
+                                min = deliveryPrices[i, j];
                                 indexOfSupplier = i;
                                 indexOfConsumer = j;
                             }
@@ -56,44 +56,31 @@ namespace TransportTaskLibrary
                 // Добавляем отгрузку на план и доставляем товар
                 if (reserves[indexOfSupplier] >= needs[indexOfConsumer])
                 {
-                    quantityOfTransport[indexOfSupplier, indexOfConsumer] = needs[indexOfConsumer];
+                    deliveryPlan[indexOfSupplier, indexOfConsumer] = needs[indexOfConsumer];
 
                     reserves[indexOfSupplier] = reserves[indexOfSupplier] - needs[indexOfConsumer];
                     needs[indexOfConsumer] = double.NaN;
                 }
                 else
                 {
-                    quantityOfTransport[indexOfSupplier, indexOfConsumer] = reserves[indexOfSupplier];
+                    deliveryPlan[indexOfSupplier, indexOfConsumer] = reserves[indexOfSupplier];
 
                     needs[indexOfConsumer] = needs[indexOfConsumer] - reserves[indexOfSupplier];
                     reserves[indexOfSupplier] = double.NaN;
                 }
-                Console.WriteLine("base|min:" + min + " i:" + indexOfSupplier + " j:" + indexOfConsumer + " quantity:" + quantityOfTransport[indexOfSupplier, indexOfConsumer]);
+                Console.WriteLine("base|min:" + min + " i:" + indexOfSupplier + " j:" + indexOfConsumer + " quantity:" + deliveryPlan[indexOfSupplier, indexOfConsumer]);
             }
 
-            return quantityOfTransport;
-        }
-
-        // Метод вычисления стоимости транспортировки
-        public static int CalculatePriceOfTransportation(int[,] pricesOfTransport, double[,] quantityOfTransport, int suppliersCount, int consumersCount)
-        {
-            int priceOfTransport = 0;
-
-            for (int i = 0; i < suppliersCount; i++)
-                for (int j = 0; j < consumersCount; j++)
-                    if (!double.IsNaN(quantityOfTransport[i, j]))
-                        priceOfTransport += pricesOfTransport[i, j] * (int)quantityOfTransport[i, j];
-
-            return priceOfTransport;
+            return deliveryPlan;
         }
 
         // Метод оптимизации плана доставки, методом потенциалов
-        private static void OptimizePlan(int[,] pricesOfTransport, double[,] quantityOfTransport, int suppliersCount, int consumersCount)
+        private static void OptimizePlan(int[,] deliveryPrices, double[,] deliveryPlan)
         {
             // U потенциалы
-            double[] suppliersPotenial = new double[suppliersCount];
+            double[] suppliersPotenial = new double[deliveryPrices.GetLength(0)];
             // V потенциалы
-            double[] consumerPotenial = new double[consumersCount];
+            double[] consumerPotenial = new double[deliveryPrices.GetLength(1)];
 
             while (true)
             {
@@ -107,14 +94,14 @@ namespace TransportTaskLibrary
 
                 // Вычисляем потенциалы
                 while (suppliersPotenial.Contains(double.NaN) || consumerPotenial.Contains(double.NaN))
-                    for (int i = 0; i < suppliersCount; i++)
-                        for (int j = 0; j < consumersCount; j++)
-                            if (!double.IsNaN(quantityOfTransport[i, j]))
+                    for (int i = 0; i < deliveryPrices.GetLength(0); i++)
+                        for (int j = 0; j < deliveryPrices.GetLength(1); j++)
+                            if (!double.IsNaN(deliveryPlan[i, j]))
                             {
                                 if (double.IsNaN(consumerPotenial[j]))
-                                    consumerPotenial[j] = pricesOfTransport[i, j] - suppliersPotenial[i];
+                                    consumerPotenial[j] = deliveryPrices[i, j] - suppliersPotenial[i];
                                 if (double.IsNaN(suppliersPotenial[i]))
-                                    suppliersPotenial[i] = pricesOfTransport[i, j] - consumerPotenial[j];
+                                    suppliersPotenial[i] = deliveryPrices[i, j] - consumerPotenial[j];
                             }
 
                 Console.WriteLine("suppliersPotenial");
@@ -129,22 +116,22 @@ namespace TransportTaskLibrary
 
                 // Оценка не задействованных маршрутов
                 // Цена доставки минус сумма потенциалов незадействованного маршрута
-                double[,] grades = new double[suppliersCount, consumersCount];
-                for (int i = 0; i < suppliersCount; i++)
-                    for (int j = 0; j < consumersCount; j++)
+                double[,] grades = new double[deliveryPrices.GetLength(0), deliveryPrices.GetLength(1)];
+                for (int i = 0; i < grades.GetLength(0); i++)
+                    for (int j = 0; j < grades.GetLength(1); j++)
                         grades[i, j] = double.NaN;
 
-                for (int i = 0; i < suppliersCount; i++)
-                    for (int j = 0; j < consumersCount; j++)
-                        if (double.IsNaN(quantityOfTransport[i, j]))
-                            grades[i, j] = pricesOfTransport[i, j] - suppliersPotenial[i] - consumerPotenial[j];
+                for (int i = 0; i < deliveryPrices.GetLength(0); i++)
+                    for (int j = 0; j < deliveryPrices.GetLength(1); j++)
+                        if (double.IsNaN(deliveryPlan[i, j]))
+                            grades[i, j] = deliveryPrices[i, j] - suppliersPotenial[i] - consumerPotenial[j];
 
                 // Ищем минимальную оценку незадействованного маршрута и его индексы
                 double min = double.MaxValue;
                 int indexOfMinI = 0;
                 int indexOfMinJ = 0;
-                for (int i = 0; i < suppliersCount; i++)
-                    for (int j = 0; j < consumersCount; j++)
+                for (int i = 0; i < grades.GetLength(0); i++)
+                    for (int j = 0; j < grades.GetLength(1); j++)
                         if (min > grades[i, j])
                         {
                             min = grades[i, j];
@@ -160,9 +147,9 @@ namespace TransportTaskLibrary
                     // Меняем 4 вершины прямоугольника против часовой стрелки
                     // Ищем вершину по горизонтали от незадействованного маршрута с низкой оценкой
                     int indexOfHorizontalI = 0;
-                    for (int i = 0; i < suppliersCount; i++)
+                    for (int i = 0; i < deliveryPrices.GetLength(0); i++)
                     {
-                        if (!double.IsNaN(quantityOfTransport[i, indexOfMinJ]))
+                        if (!double.IsNaN(deliveryPlan[i, indexOfMinJ]))
                         {
                             indexOfHorizontalI = i;
                             break;
@@ -171,9 +158,9 @@ namespace TransportTaskLibrary
 
                     // Ищем вершину по вертикали от незадействованного маршрута с низкой оценкой
                     int indexOfVerticalJ = 0;
-                    for (int j = 0; j < consumersCount; j++)
+                    for (int j = 0; j < deliveryPrices.GetLength(1); j++)
                     {
-                        if (!double.IsNaN(quantityOfTransport[indexOfMinI, j]))
+                        if (!double.IsNaN(deliveryPlan[indexOfMinI, j]))
                         {
                             indexOfVerticalJ = j;
                             break;
@@ -182,34 +169,47 @@ namespace TransportTaskLibrary
 
                     // Определяем количество продукта, которое можем переместить по прямоугольнику
                     double quantityProduct = Math.Min(
-                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ],
-                        quantityOfTransport[indexOfMinI, indexOfVerticalJ]);
+                        deliveryPlan[indexOfHorizontalI, indexOfMinJ],
+                        deliveryPlan[indexOfMinI, indexOfVerticalJ]);
 
                     // Перемещаем продукты по прямоугольнику
                     // Первая положительная вершина
-                    if (double.IsNaN(quantityOfTransport[indexOfHorizontalI, indexOfVerticalJ]))
-                        quantityOfTransport[indexOfHorizontalI, indexOfVerticalJ] = quantityProduct;
+                    if (double.IsNaN(deliveryPlan[indexOfHorizontalI, indexOfVerticalJ]))
+                        deliveryPlan[indexOfHorizontalI, indexOfVerticalJ] = quantityProduct;
                     else
-                        quantityOfTransport[indexOfHorizontalI, indexOfVerticalJ] += quantityProduct;
+                        deliveryPlan[indexOfHorizontalI, indexOfVerticalJ] += quantityProduct;
                     // Первая отрицательная вершина
-                    if (quantityOfTransport[indexOfHorizontalI, indexOfMinJ] == quantityProduct)
-                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ] = double.NaN;
+                    if (deliveryPlan[indexOfHorizontalI, indexOfMinJ] == quantityProduct)
+                        deliveryPlan[indexOfHorizontalI, indexOfMinJ] = double.NaN;
                     else
-                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ] -= quantityProduct;
+                        deliveryPlan[indexOfHorizontalI, indexOfMinJ] -= quantityProduct;
                     // Вторая положительная вершина
-                    if (double.IsNaN(quantityOfTransport[indexOfMinI, indexOfMinJ]))
-                        quantityOfTransport[indexOfMinI, indexOfMinJ] = quantityProduct;
+                    if (double.IsNaN(deliveryPlan[indexOfMinI, indexOfMinJ]))
+                        deliveryPlan[indexOfMinI, indexOfMinJ] = quantityProduct;
                     else
-                        quantityOfTransport[indexOfMinI, indexOfMinJ] += quantityProduct;
+                        deliveryPlan[indexOfMinI, indexOfMinJ] += quantityProduct;
                     // Вторая отрицательная вершина
-                    if (quantityOfTransport[indexOfMinI, indexOfVerticalJ] == quantityProduct)
-                        quantityOfTransport[indexOfMinI, indexOfVerticalJ] = double.NaN;
+                    if (deliveryPlan[indexOfMinI, indexOfVerticalJ] == quantityProduct)
+                        deliveryPlan[indexOfMinI, indexOfVerticalJ] = double.NaN;
                     else
-                        quantityOfTransport[indexOfMinI, indexOfVerticalJ] -= quantityProduct;
+                        deliveryPlan[indexOfMinI, indexOfVerticalJ] -= quantityProduct;
                 }
                 else
                     return;
             }
+        }
+
+        // Метод вычисления стоимости транспортировки
+        public static int CalculatePriceOfTransportation(int[,] deliveryPrices, double[,] deliveryPlan)
+        {
+            int priceOfTransport = 0;
+
+            for (int i = 0; i < deliveryPrices.GetLength(0); i++)
+                for (int j = 0; j < deliveryPrices.GetLength(1); j++)
+                    if (!double.IsNaN(deliveryPlan[i, j]))
+                        priceOfTransport += deliveryPrices[i, j] * (int)deliveryPlan[i, j];
+
+            return priceOfTransport;
         }
     }
 }
