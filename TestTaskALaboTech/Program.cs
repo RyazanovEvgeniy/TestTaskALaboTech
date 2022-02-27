@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using TransportTaskLibrary;
 
 namespace TestTaskALaboTech
 {
@@ -28,14 +29,15 @@ namespace TestTaskALaboTech
                 string inputString = Console.ReadLine();
 
                 // Пытаем преобразовать ее в массив интов - кол-во мест с их количеством фишек на этих местах
-                if (inputString.TryParse(out List<int> table))
+                if (inputString.TryParse(out List<int> chipsOnPlaces))
                 {
+                    var pokerTable = new PokerTable(chipsOnPlaces);
                     // Проверяем что равновесие возможно в принципе
-                    if (table.Sum() % table.Count == 0)
+                    if (pokerTable.CheckEquilibriumPossibility())
                     {
                         // Считаем количество необходимых перемещений
                         Console.WriteLine("Output:");
-                        Console.WriteLine(Transport.GetPriceOfTransport(table));
+                        Console.WriteLine(pokerTable.GetMinimumQuantityMovesToEquilibrium());
                     }
                     else
                         Console.WriteLine("Balance impossible with this numbers. Enter another.");

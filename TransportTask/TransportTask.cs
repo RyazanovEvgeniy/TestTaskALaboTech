@@ -2,58 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TestTaskALaboTech
+namespace TransportTaskLibrary
 {
-    public static class Transport
+    public static class TransportTask
     {
-        // Метод по уравновешиванию системы с помощью метода наименьшей цены
-        public static int GetPriceOfTransport(List<int> table)
-        {
-            // Считаем точку равновесия
-            int equilibrium = table.Sum() / table.Count;
-            // Количество мест, в дальнейшем для расчета
-            int quantityPlaces = table.Count;
-
-            // Заводим листы поставщиков и потребителей
-            // Первый индекс места за столом, второе кол-во фишек необходимое или излишнее
-            List<Tuple<int, double>> suppliers = new List<Tuple<int, double>>();
-            List<Tuple<int, double>> consumers = new List<Tuple<int, double>>();
-
-            // Заполняем листы поставщиков и потребителей
-            for (int i = 0; i < table.Count; i++)
-            {
-                if (table[i] > equilibrium)
-                    suppliers.Add(new Tuple<int, double>(i, table[i] - equilibrium));
-                if (table[i] < equilibrium)
-                    consumers.Add(new Tuple<int, double>(i, equilibrium - table[i]));
-            }
-
-            // Строим матрицу цен транспортировки
-            int[,] pricesOfTransport = new int[suppliers.Count, consumers.Count];
-
-            for (int i = 0; i < suppliers.Count; i++)
-                for (int j = 0; j < consumers.Count; j++)
-                    pricesOfTransport[i, j] = Math.Min(
-                        Math.Abs(suppliers[i].Item1 - consumers[j].Item1),
-                        quantityPlaces - Math.Abs(suppliers[i].Item1 - consumers[j].Item1));
-
-            // Расчитываем первоначальный опорный план
-            double[,] quantityOfTransport = CalculateBasePlan(pricesOfTransport, suppliers, consumers);
-
-            // Проверяем оптимален ли план и если нужно оптимизируем
-            OptimizePlan(pricesOfTransport, quantityOfTransport, suppliers.Count, consumers.Count);
-
-            // Возвращаем цену транспортировки после оптимизиации
-            return CalculatePriceOfTransportation(pricesOfTransport, quantityOfTransport, suppliers.Count, consumers.Count);
-        }
-
         // Метод расчета опорного плана
-        private static double[,] CalculateBasePlan(int[,] pricesOfTransport, List<Tuple<int, double>> suppliers, List<Tuple<int, double>> consumers)
+        public static double[,] CalculateBasePlan(int[,] pricesOfTransport, List<double> reserves, List<double> needs)
         {
             // Подготавливаем матрицу доставки
-            double[,] quantityOfTransport = new double[suppliers.Count, consumers.Count];
-            for (int i = 0; i < suppliers.Count; i++)
-                for (int j = 0; j < consumers.Count; j++)
+            double[,] quantityOfTransport = new double[reserves.Count, needs.Count];
+            for (int i = 0; i < reserves.Count; i++)
+                for (int j = 0; j < needs.Count; j++)
                     quantityOfTransport[i, j] = double.NaN;
 
             // Работаем пока не сформируем опорный план
@@ -64,12 +23,12 @@ namespace TestTaskALaboTech
                 int min = int.MaxValue;
                 int indexOfSupplier = 0, indexOfConsumer = 0;
 
-                for (int i = 0; i < suppliers.Count; i++)
+                for (int i = 0; i < reserves.Count; i++)
                 {
-                    for (int j = 0; j < consumers.Count; j++)
+                    for (int j = 0; j < needs.Count; j++)
                     {
-                        if (!double.IsNaN(suppliers[i].Item2)
-                            && !double.IsNaN(consumers[j].Item2))
+                        if (!double.IsNaN(reserves[i])
+                            && !double.IsNaN(needs[j]))
                         {
                             if (min > pricesOfTransport[i, j])
                             {
@@ -80,14 +39,13 @@ namespace TestTaskALaboTech
 
                             // Если минимум уже есть, но есть перевозка по той же цене, но в большем количестве
                             if (min == pricesOfTransport[i, j]
-                                && suppliers[indexOfSupplier].Item2 - consumers[indexOfConsumer].Item2 > suppliers[i].Item2 - consumers[j].Item2)
+                                && reserves[indexOfSupplier] - needs[indexOfConsumer] > reserves[i] - needs[j])
                             {
                                 min = pricesOfTransport[i, j];
                                 indexOfSupplier = i;
                                 indexOfConsumer = j;
                             }
                         }
-
                     }
                 }
 
@@ -96,35 +54,28 @@ namespace TestTaskALaboTech
                     break;
 
                 // Добавляем отгрузку на план и доставляем товар
-                if (suppliers[indexOfSupplier].Item2 >= consumers[indexOfConsumer].Item2)
+                if (reserves[indexOfSupplier] >= needs[indexOfConsumer])
                 {
-                    quantityOfTransport[indexOfSupplier, indexOfConsumer] = consumers[indexOfConsumer].Item2;
+                    quantityOfTransport[indexOfSupplier, indexOfConsumer] = needs[indexOfConsumer];
 
-                    suppliers[indexOfSupplier] = new Tuple<int, double>
-                        (suppliers[indexOfSupplier].Item1,
-                         suppliers[indexOfSupplier].Item2 - consumers[indexOfConsumer].Item2);
-                    consumers[indexOfConsumer] = new Tuple<int, double>
-                        (consumers[indexOfConsumer].Item1,
-                         double.NaN);
+                    reserves[indexOfSupplier] = reserves[indexOfSupplier] - needs[indexOfConsumer];
+                    needs[indexOfConsumer] = double.NaN;
                 }
                 else
                 {
-                    quantityOfTransport[indexOfSupplier, indexOfConsumer] = suppliers[indexOfSupplier].Item2;
+                    quantityOfTransport[indexOfSupplier, indexOfConsumer] = reserves[indexOfSupplier];
 
-                    consumers[indexOfConsumer] = new Tuple<int, double>
-                        (consumers[indexOfConsumer].Item1,
-                         consumers[indexOfConsumer].Item2 - suppliers[indexOfSupplier].Item2);
-                    suppliers[indexOfSupplier] = new Tuple<int, double>
-                        (suppliers[indexOfSupplier].Item1,
-                         double.NaN);
+                    needs[indexOfConsumer] = needs[indexOfConsumer] - reserves[indexOfSupplier];
+                    reserves[indexOfSupplier] = double.NaN;
                 }
+                Console.WriteLine("base|min:" + min + " i:" + indexOfSupplier + " j:" + indexOfConsumer + " quantity:" + quantityOfTransport[indexOfSupplier, indexOfConsumer]);
             }
 
             return quantityOfTransport;
         }
 
         // Метод вычисления стоимости транспортировки
-        private static int CalculatePriceOfTransportation(int[,] pricesOfTransport, double[,] quantityOfTransport, int suppliersCount, int consumersCount)
+        public static int CalculatePriceOfTransportation(int[,] pricesOfTransport, double[,] quantityOfTransport, int suppliersCount, int consumersCount)
         {
             int priceOfTransport = 0;
 
@@ -137,7 +88,7 @@ namespace TestTaskALaboTech
         }
 
         // Метод оптимизации плана доставки, методом потенциалов
-        private static void OptimizePlan(int[,] pricesOfTransport, double[,] quantityOfTransport,  int suppliersCount, int consumersCount)
+        private static void OptimizePlan(int[,] pricesOfTransport, double[,] quantityOfTransport, int suppliersCount, int consumersCount)
         {
             // U потенциалы
             double[] suppliersPotenial = new double[suppliersCount];
@@ -166,6 +117,16 @@ namespace TestTaskALaboTech
                                     suppliersPotenial[i] = pricesOfTransport[i, j] - consumerPotenial[j];
                             }
 
+                Console.WriteLine("suppliersPotenial");
+                for (int i = 0; i < suppliersPotenial.Length; i++)
+                    Console.Write(suppliersPotenial[i] + " ");
+                Console.WriteLine();
+
+                Console.WriteLine("consumerPotenial");
+                for (int i = 0; i < consumerPotenial.Length; i++)
+                    Console.Write(consumerPotenial[i] + " ");
+                Console.WriteLine();
+
                 // Оценка не задействованных маршрутов
                 // Цена доставки минус сумма потенциалов незадействованного маршрута
                 double[,] grades = new double[suppliersCount, consumersCount];
@@ -191,9 +152,11 @@ namespace TestTaskALaboTech
                             indexOfMinJ = j;
                         }
 
+                Console.WriteLine("\nmin:" + min + " i:" + indexOfMinI + " y:" + indexOfMinJ);
                 // Если есть маршрут с отрицательной оценкой оптимизируем план
                 if (min < 0.0)
                 {
+                    return;
                     // Меняем 4 вершины прямоугольника против часовой стрелки
                     // Ищем вершину по горизонтали от незадействованного маршрута с низкой оценкой
                     int indexOfHorizontalI = 0;
@@ -219,7 +182,7 @@ namespace TestTaskALaboTech
 
                     // Определяем количество продукта, которое можем переместить по прямоугольнику
                     double quantityProduct = Math.Min(
-                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ], 
+                        quantityOfTransport[indexOfHorizontalI, indexOfMinJ],
                         quantityOfTransport[indexOfMinI, indexOfVerticalJ]);
 
                     // Перемещаем продукты по прямоугольнику
