@@ -68,7 +68,6 @@ namespace TransportTaskLibrary
                     needs[indexOfConsumer] = needs[indexOfConsumer] - reserves[indexOfSupplier];
                     reserves[indexOfSupplier] = double.NaN;
                 }
-                Console.WriteLine("base|min:" + min + " i:" + indexOfSupplier + " j:" + indexOfConsumer + " quantity:" + deliveryPlan[indexOfSupplier, indexOfConsumer]);
             }
 
             return deliveryPlan;

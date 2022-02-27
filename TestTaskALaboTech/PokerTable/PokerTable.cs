@@ -67,7 +67,7 @@ namespace TestTaskALaboTech
             // Расcчитываем опорный план
             double[,] deliveryPlan = TransportTask.CalculateBasePlan(deliveryPrices, reserves, needs);
 
-            Console.WriteLine("quantityOfTransport");
+            Console.WriteLine("deliveryPlan");
             for (int i = 0; i < deliveryPlan.GetLength(0); i++)
             {
                 for (int j = 0; j < deliveryPlan.GetLength(1); j++)

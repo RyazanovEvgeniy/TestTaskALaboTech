@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using TransportTaskLibrary;
+using System.Globalization;
+using System.Threading;
 
 namespace TestTaskALaboTech
 {
@@ -9,6 +9,8 @@ namespace TestTaskALaboTech
     {
         static void Main(string[] args)
         {
+            // Переведем приложение на английский, для того, чтобы видеть православное NAN вместо "не число" 
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             Console.WriteLine("Jose set up a circular poker table for his friends,\n" +
                               "so that each of the seats at the table has the same number of poker chips.\n" +
                               "But when Jose wasn’t looking, someone rearranged all of the chips,\n" +
