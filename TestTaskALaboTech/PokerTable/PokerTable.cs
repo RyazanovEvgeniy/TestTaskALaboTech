@@ -24,14 +24,14 @@ namespace TestTaskALaboTech
                 return 0;
             }
 
+            // **********************************************************
+            // ******* Приводим нашу задачу к транспортной задаче *******
+            // **********************************************************
+
             // Считаем точку равновесия
             int equilibrium = chipsOnPlaces.Sum() / chipsOnPlaces.Count;
             // Количество мест, в дальнейшем для расчета
             int quantityPlaces = chipsOnPlaces.Count;
-
-            // ******************************************************
-            // ***** Приводим нашу задачу к транспортной задаче *****
-            // ******************************************************
 
             // Заводим листы поставщиков и потребителей
             // Первый индекс места за столом, второе кол-во фишек необходимое или излишнее
@@ -67,17 +67,28 @@ namespace TestTaskALaboTech
             // Расcчитываем опорный план
             double[,] deliveryPlan = TransportTask.CalculateBasePlan(deliveryPrices, reserves, needs);
 
-            Console.WriteLine("deliveryPlan");
-            for (int i = 0; i < deliveryPlan.GetLength(0); i++)
+            Console.WriteLine("\ndeliveryPrices");
+            for (int i = 0; i < deliveryPrices.GetLength(0); i++)
             {
-                for (int j = 0; j < deliveryPlan.GetLength(1); j++)
-                    Console.Write(deliveryPlan[i, j] + " ");
+                for (int j = 0; j < deliveryPrices.GetLength(1); j++)
+                    Console.Write(deliveryPrices[i, j] + " \t");
                 Console.WriteLine();
             }
             Console.WriteLine();
 
+            Console.WriteLine("deliveryPlan");
+            for (int i = 0; i < deliveryPlan.GetLength(0); i++)
+            {
+                for (int j = 0; j < deliveryPlan.GetLength(1); j++)
+                    Console.Write(deliveryPlan[i, j] + " \t");
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+
+            TransportTask.OptimizePlan(deliveryPrices, deliveryPlan);
+
             // Смотрим стоимость доставки по опорному плану
-            return TransportTask.CalculatePriceOfTransportation(deliveryPrices, deliveryPlan);
+            return TransportTask.CalculatePriceOfDelivery(deliveryPrices, deliveryPlan);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 
 namespace TransportTaskLibrary
@@ -74,7 +75,7 @@ namespace TransportTaskLibrary
         }
 
         // Метод оптимизации плана доставки, методом потенциалов
-        private static void OptimizePlan(int[,] deliveryPrices, double[,] deliveryPlan)
+        public static void OptimizePlan(int[,] deliveryPrices, double[,] deliveryPlan)
         {
             // U потенциалы
             double[] suppliersPotenial = new double[deliveryPrices.GetLength(0)];
@@ -90,7 +91,6 @@ namespace TransportTaskLibrary
                     consumerPotenial[i] = double.NaN;
                 // U0 = 0 - опорный потенциал
                 suppliersPotenial[0] = 0;
-
                 // Вычисляем потенциалы
                 while (suppliersPotenial.Contains(double.NaN) || consumerPotenial.Contains(double.NaN))
                     for (int i = 0; i < deliveryPrices.GetLength(0); i++)
@@ -139,67 +139,30 @@ namespace TransportTaskLibrary
                         }
 
                 Console.WriteLine("\nmin:" + min + " i:" + indexOfMinI + " y:" + indexOfMinJ);
+
                 // Если есть маршрут с отрицательной оценкой оптимизируем план
                 if (min < 0.0)
                 {
+                    // Добавляем новый маршрут по месту маршрута с отрицательной оценкой
+                    deliveryPlan[indexOfMinI, indexOfMinJ] = 0.0;
+
+                    List<Point> optimizationRoute = FindOptimizationRoute(deliveryPlan, new Point(indexOfMinI, indexOfMinJ));
                     return;
-                    // Меняем 4 вершины прямоугольника против часовой стрелки
-                    // Ищем вершину по горизонтали от незадействованного маршрута с низкой оценкой
-                    int indexOfHorizontalI = 0;
-                    for (int i = 0; i < deliveryPrices.GetLength(0); i++)
-                    {
-                        if (!double.IsNaN(deliveryPlan[i, indexOfMinJ]))
-                        {
-                            indexOfHorizontalI = i;
-                            break;
-                        }
-                    }
-
-                    // Ищем вершину по вертикали от незадействованного маршрута с низкой оценкой
-                    int indexOfVerticalJ = 0;
-                    for (int j = 0; j < deliveryPrices.GetLength(1); j++)
-                    {
-                        if (!double.IsNaN(deliveryPlan[indexOfMinI, j]))
-                        {
-                            indexOfVerticalJ = j;
-                            break;
-                        }
-                    }
-
-                    // Определяем количество продукта, которое можем переместить по прямоугольнику
-                    double quantityProduct = Math.Min(
-                        deliveryPlan[indexOfHorizontalI, indexOfMinJ],
-                        deliveryPlan[indexOfMinI, indexOfVerticalJ]);
-
-                    // Перемещаем продукты по прямоугольнику
-                    // Первая положительная вершина
-                    if (double.IsNaN(deliveryPlan[indexOfHorizontalI, indexOfVerticalJ]))
-                        deliveryPlan[indexOfHorizontalI, indexOfVerticalJ] = quantityProduct;
-                    else
-                        deliveryPlan[indexOfHorizontalI, indexOfVerticalJ] += quantityProduct;
-                    // Первая отрицательная вершина
-                    if (deliveryPlan[indexOfHorizontalI, indexOfMinJ] == quantityProduct)
-                        deliveryPlan[indexOfHorizontalI, indexOfMinJ] = double.NaN;
-                    else
-                        deliveryPlan[indexOfHorizontalI, indexOfMinJ] -= quantityProduct;
-                    // Вторая положительная вершина
-                    if (double.IsNaN(deliveryPlan[indexOfMinI, indexOfMinJ]))
-                        deliveryPlan[indexOfMinI, indexOfMinJ] = quantityProduct;
-                    else
-                        deliveryPlan[indexOfMinI, indexOfMinJ] += quantityProduct;
-                    // Вторая отрицательная вершина
-                    if (deliveryPlan[indexOfMinI, indexOfVerticalJ] == quantityProduct)
-                        deliveryPlan[indexOfMinI, indexOfVerticalJ] = double.NaN;
-                    else
-                        deliveryPlan[indexOfMinI, indexOfVerticalJ] -= quantityProduct;
                 }
                 else
                     return;
             }
         }
 
-        // Метод вычисления стоимости транспортировки
-        public static int CalculatePriceOfTransportation(int[,] deliveryPrices, double[,] deliveryPlan)
+        public static List<Point> FindOptimizationRoute(double[,] deliveryPlan, Point startPoint)
+        {
+            List<Point> optimizationRoute = new List<Point>();
+
+            return optimizationRoute;
+        }
+
+        // Метод вычисления стоимости доставки
+        public static int CalculatePriceOfDelivery(int[,] deliveryPrices, double[,] deliveryPlan)
         {
             int priceOfTransport = 0;
 
