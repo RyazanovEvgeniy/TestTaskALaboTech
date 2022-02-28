@@ -133,28 +133,31 @@ namespace TransportTaskLibrary
                     // Добавляем новый маршрут по месту маршрута с отрицательной оценкой
                     deliveryPlan[indexOfMinI, indexOfMinJ] = 0.0;
 
-                    // Ищем маршрут оптимизации
-                    FindOptimizationRoute(deliveryPlan, indexOfMinI, indexOfMinJ, out List<RoutePoint> optimizationRoute);
-
-                    // Ищем минимальную доставку по маршруту оптимизации (Исключая созданный маршрут)
-                    double minDelivery = double.MaxValue;
-                    foreach (var point in optimizationRoute)
-                        if (minDelivery > deliveryPlan[point.i, point.j] && (indexOfMinI != point.i || indexOfMinJ != point.j))
-                            minDelivery = deliveryPlan[point.i, point.j];
-
-                    // Оптимизируем план
-                    for (int i = 0; i < optimizationRoute.Count; i++)
+                    // Если получается найти маршрут оптимизации
+                    if (FindOptimizationRoute(deliveryPlan, indexOfMinI, indexOfMinJ, out List<RoutePoint> optimizationRoute))
                     {
-                        if (i % 2 == 0)
-                            deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] += minDelivery;
-                        else
+                        // Ищем минимальную доставку по маршруту оптимизации (Исключая созданный маршрут)
+                        double minDelivery = double.MaxValue;
+                        foreach (var point in optimizationRoute)
+                            if (minDelivery > deliveryPlan[point.i, point.j] && (indexOfMinI != point.i || indexOfMinJ != point.j))
+                                minDelivery = deliveryPlan[point.i, point.j];
+
+                        // Оптимизируем план
+                        for (int i = 0; i < optimizationRoute.Count; i++)
                         {
-                            deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] -= minDelivery;
-                            // Если доставка стала ровна нулю убираем ее из плана
-                            if (deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] == 0.0)
-                                deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] = double.NaN;
+                            if (i % 2 == 0)
+                                deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] += minDelivery;
+                            else
+                            {
+                                deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] -= minDelivery;
+                                // Если доставка стала ровна нулю убираем ее из плана
+                                if (deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] == 0.0)
+                                    deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] = double.NaN;
+                            }
                         }
                     }
+                    else
+                        return;
                 }
                 else
                     return;
@@ -203,6 +206,7 @@ namespace TransportTaskLibrary
             // Работаем пока не составим маршрут или не убедимся, что его нет
             while (true)
             {
+                // Ищем от последней точки маршрута
                 RoutePoint routePoint = optimizationRoute.LastOrDefault();
 
                 // В начальной точке ищем во все стороны,

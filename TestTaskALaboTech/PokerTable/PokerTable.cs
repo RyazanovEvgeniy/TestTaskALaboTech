@@ -16,6 +16,7 @@ namespace TestTaskALaboTech
         // Метод проверки возможности равновесия фишек на покерном столе
         public bool CheckEquilibriumPossibility() => chipsOnPlaces.Sum() % chipsOnPlaces.Count == 0;
 
+        // Метод расчета минимального количества перемещений для равновесия
         public int GetMinimumQuantityMovesToEquilibrium()
         {
             if (!CheckEquilibriumPossibility())

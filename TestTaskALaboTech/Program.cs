@@ -34,6 +34,7 @@ namespace TestTaskALaboTech
                 if (inputString.TryParse(out List<int> chipsOnPlaces))
                 {
                     var pokerTable = new PokerTable(chipsOnPlaces);
+
                     // Проверяем что равновесие возможно в принципе
                     if (pokerTable.CheckEquilibriumPossibility())
                     {
