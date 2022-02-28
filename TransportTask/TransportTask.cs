@@ -53,18 +53,17 @@ namespace TransportTaskLibrary
                 if (min == int.MaxValue)
                     break;
 
-                // Добавляем отгрузку на план и доставляем товар
+                // Добавляем отгрузку на план и доставляем товар,
+                // так же блокируем одну из изчерпанных осей
                 if (reserves[indexOfSupplier] >= needs[indexOfConsumer])
                 {
                     deliveryPlan[indexOfSupplier, indexOfConsumer] = needs[indexOfConsumer];
-
                     reserves[indexOfSupplier] = reserves[indexOfSupplier] - needs[indexOfConsumer];
                     needs[indexOfConsumer] = double.NaN;
                 }
                 else
                 {
                     deliveryPlan[indexOfSupplier, indexOfConsumer] = reserves[indexOfSupplier];
-
                     needs[indexOfConsumer] = needs[indexOfConsumer] - reserves[indexOfSupplier];
                     reserves[indexOfSupplier] = double.NaN;
                 }
@@ -118,6 +117,7 @@ namespace TransportTaskLibrary
                 double minGrade = double.MaxValue;
                 int indexOfMinI = 0;
                 int indexOfMinJ = 0;
+
                 for (int i = 0; i < grades.GetLength(0); i++)
                     for (int j = 0; j < grades.GetLength(1); j++)
                         if (minGrade > grades[i, j])
@@ -145,6 +145,7 @@ namespace TransportTaskLibrary
                         // Оптимизируем план
                         for (int i = 0; i < optimizationRoute.Count; i++)
                         {
+                            // Четные позиции увеличиваем, нечетные позиции уменьшаем
                             if (i % 2 == 0)
                                 deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] += minDelivery;
                             else
@@ -175,7 +176,7 @@ namespace TransportTaskLibrary
             public int currentDirection
             {
                 get { return _currentDirection; }
-                set { _currentDirection = value < 0 ? 0: value; }
+                set { _currentDirection = value < 0 ? 0 : value; }
             }
             // Начальное направление поиска новой ячейки
             public int initializationDirection { get; }
@@ -185,10 +186,10 @@ namespace TransportTaskLibrary
             public int j { get; }
 
             // Конструктор точки маршрута
-            public RoutePoint(int x, int y, int initializationDirection)
+            public RoutePoint(int i, int j, int initializationDirection)
             {
-                this.i = x;
-                this.j = y;
+                this.i = i;
+                this.j = j;
                 this.initializationDirection = initializationDirection;
                 currentDirection = initializationDirection - 1;
             }
@@ -282,7 +283,7 @@ namespace TransportTaskLibrary
         }
 
         // Метод поиска точки вверх
-        public static bool TryFindRoutePointUp(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        private static bool TryFindRoutePointUp(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
         {
             newPointI = 0;
             newPointJ = 0;
@@ -299,7 +300,7 @@ namespace TransportTaskLibrary
         }
 
         // Метод поиска точки вниз
-        public static bool TryFindRoutePointDown(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        private static bool TryFindRoutePointDown(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
         {
             newPointI = 0;
             newPointJ = 0;
@@ -316,7 +317,7 @@ namespace TransportTaskLibrary
         }
 
         // Метод поиска точки вправо
-        public static bool TryFindRoutePointRight(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        private static bool TryFindRoutePointRight(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
         {
             newPointI = 0;
             newPointJ = 0;
@@ -333,7 +334,7 @@ namespace TransportTaskLibrary
         }
 
         // Метод поиска точки влево
-        public static bool TryFindRoutePointLeft(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        private static bool TryFindRoutePointLeft(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
         {
             newPointI = 0;
             newPointJ = 0;
