@@ -69,7 +69,6 @@ namespace TransportTaskLibrary
                     reserves[indexOfSupplier] = double.NaN;
                 }
             }
-
             return deliveryPlan;
         }
 
@@ -81,6 +80,7 @@ namespace TransportTaskLibrary
             // V потенциалы
             double[] consumerPotenial = new double[deliveryPrices.GetLength(1)];
 
+            // Работаем пока не будет не задействованных маршрутов с отрицательными оценками
             while (true)
             {
                 // Подготавливаем массивы под итерацию цикла
@@ -136,7 +136,7 @@ namespace TransportTaskLibrary
                     // Ищем маршрут оптимизации
                     FindOptimizationRoute(deliveryPlan, indexOfMinI, indexOfMinJ, out List<RoutePoint> optimizationRoute);
 
-                    // Ищем минимальную доставку по маршруту (Исключая созданный маршрут)
+                    // Ищем минимальную доставку по маршруту оптимизации (Исключая созданный маршрут)
                     double minDelivery = double.MaxValue;
                     foreach (var point in optimizationRoute)
                         if (minDelivery > deliveryPlan[point.i, point.j] && (indexOfMinI != point.i || indexOfMinJ != point.j))
@@ -191,8 +191,10 @@ namespace TransportTaskLibrary
             }
         }
 
+        // Метод поиска маршрута оптимизации
         public static bool FindOptimizationRoute(double[,] deliveryPlan, int startPointI, int startPointJ, out List<RoutePoint> optimizationRoute)
         {
+            // Создаем лист точек
             optimizationRoute = new List<RoutePoint>();
 
             // Добавляем стартовую точку на маршрут, ищем вверх
@@ -241,7 +243,7 @@ namespace TransportTaskLibrary
                         // И еще не вернулись в исходную точку, добавляем точку
                         if (newPointI != startPointI || newPointJ != startPointJ)
                             optimizationRoute.Add(new RoutePoint(newPointI, newPointJ, routePoint.currentDirection));
-                        // Иначе выходим из цикла
+                        // Иначе выходим из цикла, так как вернулись в исходную точку
                         else
                         {
                             // Удаляем промежуточные точки (Нужны только вершины многоугольника)
@@ -261,7 +263,7 @@ namespace TransportTaskLibrary
                 }
                 else
                 {
-                    // Если ничего не найдено от данной точки
+                    // Если точка тупиковая, удаляем ее
                     optimizationRoute.Remove(routePoint);
 
                     // Выкидываем из цикла, если маршрут схлопнулся, в случае невозможности построения

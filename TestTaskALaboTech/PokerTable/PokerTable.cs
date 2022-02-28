@@ -67,35 +67,10 @@ namespace TestTaskALaboTech
             // Расcчитываем опорный план
             double[,] deliveryPlan = TransportTask.CalculateBasePlan(deliveryPrices, reserves, needs);
 
-            Console.WriteLine("\ndeliveryPrices");
-            for (int i = 0; i < deliveryPrices.GetLength(0); i++)
-            {
-                for (int j = 0; j < deliveryPrices.GetLength(1); j++)
-                    Console.Write(deliveryPrices[i, j] + " \t");
-                Console.WriteLine();
-            }
-            Console.WriteLine();
-
-            Console.WriteLine("deliveryPlan");
-            for (int i = 0; i < deliveryPlan.GetLength(0); i++)
-            {
-                for (int j = 0; j < deliveryPlan.GetLength(1); j++)
-                    Console.Write(deliveryPlan[i, j] + " \t");
-                Console.WriteLine();
-            }
-            Console.WriteLine();
-
+            // Оптимизируем план
             TransportTask.OptimizePlan(deliveryPrices, deliveryPlan);
 
-            Console.WriteLine("deliveryPlan");
-            for (int i = 0; i < deliveryPlan.GetLength(0); i++)
-            {
-                for (int j = 0; j < deliveryPlan.GetLength(1); j++)
-                    Console.Write(deliveryPlan[i, j] + " \t");
-                Console.WriteLine();
-            }
-            Console.WriteLine();
-            // Смотрим стоимость доставки по опорному плану
+            // Смотрим стоимость доставки плану
             return TransportTask.CalculatePriceOfDelivery(deliveryPrices, deliveryPlan);
         }
     }
