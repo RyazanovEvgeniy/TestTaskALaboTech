@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 
 namespace TransportTaskLibrary
@@ -103,16 +102,6 @@ namespace TransportTaskLibrary
                                     suppliersPotenial[i] = deliveryPrices[i, j] - consumerPotenial[j];
                             }
 
-                Console.WriteLine("suppliersPotenial");
-                for (int i = 0; i < suppliersPotenial.Length; i++)
-                    Console.Write(suppliersPotenial[i] + " ");
-                Console.WriteLine();
-
-                Console.WriteLine("consumerPotenial");
-                for (int i = 0; i < consumerPotenial.Length; i++)
-                    Console.Write(consumerPotenial[i] + " ");
-                Console.WriteLine();
-
                 // Оценка не задействованных маршрутов
                 // Цена доставки минус сумма потенциалов незадействованного маршрута
                 double[,] grades = new double[deliveryPrices.GetLength(0), deliveryPrices.GetLength(1)];
@@ -126,39 +115,232 @@ namespace TransportTaskLibrary
                             grades[i, j] = deliveryPrices[i, j] - suppliersPotenial[i] - consumerPotenial[j];
 
                 // Ищем минимальную оценку незадействованного маршрута и его индексы
-                double min = double.MaxValue;
+                double minGrade = double.MaxValue;
                 int indexOfMinI = 0;
                 int indexOfMinJ = 0;
                 for (int i = 0; i < grades.GetLength(0); i++)
                     for (int j = 0; j < grades.GetLength(1); j++)
-                        if (min > grades[i, j])
+                        if (minGrade > grades[i, j])
                         {
-                            min = grades[i, j];
+                            minGrade = grades[i, j];
                             indexOfMinI = i;
                             indexOfMinJ = j;
                         }
 
-                Console.WriteLine("\nmin:" + min + " i:" + indexOfMinI + " y:" + indexOfMinJ);
-
                 // Если есть маршрут с отрицательной оценкой оптимизируем план
-                if (min < 0.0)
+                if (minGrade < 0.0)
                 {
                     // Добавляем новый маршрут по месту маршрута с отрицательной оценкой
                     deliveryPlan[indexOfMinI, indexOfMinJ] = 0.0;
 
-                    List<Point> optimizationRoute = FindOptimizationRoute(deliveryPlan, new Point(indexOfMinI, indexOfMinJ));
-                    return;
+                    // Ищем маршрут оптимизации
+                    FindOptimizationRoute(deliveryPlan, indexOfMinI, indexOfMinJ, out List<RoutePoint> optimizationRoute);
+
+                    // Ищем минимальную доставку по маршруту (Исключая созданный маршрут)
+                    double minDelivery = double.MaxValue;
+                    foreach (var point in optimizationRoute)
+                        if (minDelivery > deliveryPlan[point.i, point.j] && (indexOfMinI != point.i || indexOfMinJ != point.j))
+                            minDelivery = deliveryPlan[point.i, point.j];
+
+                    // Оптимизируем план
+                    for (int i = 0; i < optimizationRoute.Count; i++)
+                    {
+                        if (i % 2 == 0)
+                            deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] += minDelivery;
+                        else
+                        {
+                            deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] -= minDelivery;
+                            // Если доставка стала ровна нулю убираем ее из плана
+                            if (deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] == 0.0)
+                                deliveryPlan[optimizationRoute[i].i, optimizationRoute[i].j] = double.NaN;
+                        }
+                    }
                 }
                 else
                     return;
             }
         }
 
-        public static List<Point> FindOptimizationRoute(double[,] deliveryPlan, Point startPoint)
+        // Класс точки маршрута оптимизации
+        public class RoutePoint
         {
-            List<Point> optimizationRoute = new List<Point>();
+            // 0 - Вверх, 1 - Вправо, 2 - Вниз, 3 - Влево, 4 - Вверх и тд...
+            // Поиск ведется по самой дальней траектории, поэтому есть ограничение поиска влево,
+            // то есть поиск с отрицательным направлением блокируем
+            // Содержит текущее направление поиска новой ячейки
+            private int _currentDirection;
+            public int currentDirection
+            {
+                get { return _currentDirection; }
+                set { _currentDirection = value < 0 ? 0: value; }
+            }
+            // Начальное направление поиска новой ячейки
+            public int initializationDirection { get; }
+            // Координата X текущей ячейки
+            public int i { get; }
+            // Координата Y текущей ячейки
+            public int j { get; }
 
-            return optimizationRoute;
+            // Конструктор точки маршрута
+            public RoutePoint(int x, int y, int initializationDirection)
+            {
+                this.i = x;
+                this.j = y;
+                this.initializationDirection = initializationDirection;
+                currentDirection = initializationDirection - 1;
+            }
+        }
+
+        public static bool FindOptimizationRoute(double[,] deliveryPlan, int startPointI, int startPointJ, out List<RoutePoint> optimizationRoute)
+        {
+            optimizationRoute = new List<RoutePoint>();
+
+            // Добавляем стартовую точку на маршрут, ищем вверх
+            optimizationRoute.Add(new RoutePoint(startPointI, startPointJ, 0));
+
+            // Работаем пока не составим маршрут или не убедимся, что его нет
+            while (true)
+            {
+                RoutePoint routePoint = optimizationRoute.LastOrDefault();
+
+                // В начальной точке ищем во все стороны,
+                // в последующих пока направление не поменялось на обратное
+                if (optimizationRoute.Count == 1 
+                    ? routePoint.currentDirection < routePoint.initializationDirection + 4 
+                    : routePoint.currentDirection < routePoint.initializationDirection + 2)
+                {
+                    // Заводим координаты под новую точку
+                    int newPointI = 0;
+                    int newPointJ = 0;
+
+                    // Индикатор нахождения точки
+                    bool pointWasFound = false;
+
+                    // Ищем в заданном направлении
+                    switch (routePoint.currentDirection % 4)
+                    {
+                        case 0:
+                            pointWasFound = TryFindRoutePointUp(deliveryPlan, routePoint.i, routePoint.j, out newPointI, out newPointJ);
+                            break;
+                        case 1:
+                            pointWasFound = TryFindRoutePointRight(deliveryPlan, routePoint.i, routePoint.j, out newPointI, out newPointJ);
+                            break;
+                        case 2:
+                            pointWasFound = TryFindRoutePointDown(deliveryPlan, routePoint.i, routePoint.j, out newPointI, out newPointJ);
+                            break;
+                        case 3:
+                            pointWasFound = TryFindRoutePointLeft(deliveryPlan, routePoint.i, routePoint.j, out newPointI, out newPointJ);
+                            break;
+                        default:
+                            break;
+                    }
+
+                    // Если точка была найдена
+                    if (pointWasFound)
+                    {
+                        // И еще не вернулись в исходную точку, добавляем точку
+                        if (newPointI != startPointI || newPointJ != startPointJ)
+                            optimizationRoute.Add(new RoutePoint(newPointI, newPointJ, routePoint.currentDirection));
+                        // Иначе выходим из цикла
+                        else
+                        {
+                            // Удаляем промежуточные точки (Нужны только вершины многоугольника)
+                            if (optimizationRoute.Count >= 4)
+                                for (int i = 0; i < optimizationRoute.Count - 1; i++)
+                                    if (optimizationRoute[i].currentDirection == optimizationRoute[i + 1].currentDirection)
+                                    {
+                                        optimizationRoute.RemoveAt(i);
+                                        i--;
+                                    }
+                            return true;
+                        }
+                    }
+                    // Иначе меняем направление поиска
+                    else
+                        routePoint.currentDirection++;
+                }
+                else
+                {
+                    // Если ничего не найдено от данной точки
+                    optimizationRoute.Remove(routePoint);
+
+                    // Выкидываем из цикла, если маршрут схлопнулся, в случае невозможности построения
+                    if (optimizationRoute.Count == 0)
+                        return false;
+
+                    // При возвращении в предыдущую точку меняем направление
+                    routePoint = optimizationRoute.LastOrDefault();
+                    routePoint.currentDirection++;
+                }
+            }
+        }
+
+        // Метод поиска точки вверх
+        public static bool TryFindRoutePointUp(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        {
+            newPointI = 0;
+            newPointJ = 0;
+
+            for (int i = startPointI; i >= 0; i--)
+                if (!double.IsNaN(deliveryPlan[i, startPointJ]) && i != startPointI)
+                {
+                    newPointI = i;
+                    newPointJ = startPointJ;
+                    return true;
+                }
+
+            return false;
+        }
+
+        // Метод поиска точки вниз
+        public static bool TryFindRoutePointDown(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        {
+            newPointI = 0;
+            newPointJ = 0;
+
+            for (int i = startPointI; i < deliveryPlan.GetLength(0); i++)
+                if (!double.IsNaN(deliveryPlan[i, startPointJ]) && i != startPointI)
+                {
+                    newPointI = i;
+                    newPointJ = startPointJ;
+                    return true;
+                }
+
+            return false;
+        }
+
+        // Метод поиска точки вправо
+        public static bool TryFindRoutePointRight(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        {
+            newPointI = 0;
+            newPointJ = 0;
+
+            for (int j = startPointJ; j < deliveryPlan.GetLength(1); j++)
+                if (!double.IsNaN(deliveryPlan[startPointI, j]) && j != startPointJ)
+                {
+                    newPointI = startPointI;
+                    newPointJ = j;
+                    return true;
+                }
+
+            return false;
+        }
+
+        // Метод поиска точки влево
+        public static bool TryFindRoutePointLeft(double[,] deliveryPlan, int startPointI, int startPointJ, out int newPointI, out int newPointJ)
+        {
+            newPointI = 0;
+            newPointJ = 0;
+
+            for (int j = startPointJ; j >= 0; j--)
+                if (!double.IsNaN(deliveryPlan[startPointI, j]) && j != startPointJ)
+                {
+                    newPointI = startPointI;
+                    newPointJ = j;
+                    return true;
+                }
+
+            return false;
         }
 
         // Метод вычисления стоимости доставки

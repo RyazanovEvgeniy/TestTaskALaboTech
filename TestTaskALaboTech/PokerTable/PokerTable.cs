@@ -87,6 +87,14 @@ namespace TestTaskALaboTech
 
             TransportTask.OptimizePlan(deliveryPrices, deliveryPlan);
 
+            Console.WriteLine("deliveryPlan");
+            for (int i = 0; i < deliveryPlan.GetLength(0); i++)
+            {
+                for (int j = 0; j < deliveryPlan.GetLength(1); j++)
+                    Console.Write(deliveryPlan[i, j] + " \t");
+                Console.WriteLine();
+            }
+            Console.WriteLine();
             // Смотрим стоимость доставки по опорному плану
             return TransportTask.CalculatePriceOfDelivery(deliveryPrices, deliveryPlan);
         }
