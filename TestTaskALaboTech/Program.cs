@@ -11,6 +11,7 @@ namespace TestTaskALaboTech
         {
             // Переведем приложение на английский, для того, чтобы видеть православное NAN вместо "не число" 
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+
             Console.WriteLine("Jose set up a circular poker table for his friends,\n" +
                               "so that each of the seats at the table has the same number of poker chips.\n" +
                               "But when Jose wasn’t looking, someone rearranged all of the chips,\n" +
@@ -33,15 +34,15 @@ namespace TestTaskALaboTech
                 // Пытаем преобразовать ее в массив интов - кол-во мест с их количеством фишек на этих местах
                 if (inputString.TryParse(out List<int> chipsOnPlaces))
                 {
+                    // Создаем покерный стол
                     var pokerTable = new PokerTable(chipsOnPlaces);
+
+                    // Считаем количество необходимых перемещений
+                    Console.WriteLine("Output:");
 
                     // Проверяем что равновесие возможно в принципе
                     if (pokerTable.CheckEquilibriumPossibility())
-                    {
-                        // Считаем количество необходимых перемещений
-                        Console.WriteLine("Output:");
                         Console.WriteLine(pokerTable.GetMinimumQuantityMovesToEquilibrium());
-                    }
                     else
                         Console.WriteLine("Balance impossible with this numbers. Enter another.");
                 }
